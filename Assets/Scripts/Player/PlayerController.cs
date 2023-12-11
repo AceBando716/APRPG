@@ -4,7 +4,13 @@ using System.Collections;
 
 public class PlayerController : MonoBehaviour
 {
-    [SerializeField] private Animator animator;
+    [SerializeField] public int playerLevel = 1;
+    [SerializeField] public int currentExp = 0;
+    [SerializeField] public int expToNextLevel = 100;
+    [SerializeField] public int maxLevel = 100;
+    [SerializeField] public float damageMultiplier = 1.0f; // Initial damage multiplier
+    [SerializeField] private float baseDamage = 10f; // Initial base damage
+    private Animator animator;
     [SerializeField] private float walkSpeed = 2f;
     [SerializeField] private float sprintSpeed = 10f;
     [SerializeField] private float turnSmoothTime = 0.1f;
@@ -51,7 +57,47 @@ public class PlayerController : MonoBehaviour
         HandleMovement();
         HandleDashing();
         HandleAttack();
+
+        if (currentExp >= expToNextLevel)
+        {
+            LevelUp();
+
+        }
     }
+
+    public int GetCurrentExp()
+    {
+        return currentExp;
+    }
+
+     
+    public int GetExpToNextLevel()
+    {
+        return expToNextLevel;
+    }
+
+     
+    public int GetPlayerLevel()
+    {
+        return playerLevel;
+    }
+    public void GainExperience(int amount)
+    {
+        currentExp += amount;
+
+    }
+    private void LevelUp()
+    {
+        if (playerLevel < maxLevel)
+        {
+            playerLevel++;
+            currentExp -= expToNextLevel;  
+            expToNextLevel = Mathf.RoundToInt(expToNextLevel * 1.1f);
+            damageMultiplier += 0.1f; // 10%  
+        }
+    }
+         
+
 
     private void HandleSprinting()
     {
@@ -154,7 +200,7 @@ public class PlayerController : MonoBehaviour
         {
             
 
-             
+            float damage = baseDamage * damageMultiplier;
             animator.SetTrigger("AttackTrigger");
             
              
@@ -164,6 +210,7 @@ public class PlayerController : MonoBehaviour
          
     }
 
-
-
 }
+ 
+
+

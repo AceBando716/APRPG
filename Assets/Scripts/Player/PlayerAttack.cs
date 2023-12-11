@@ -4,8 +4,17 @@ using UnityEngine;
 
 public class PlayerAttack : MonoBehaviour
 {
-    public int attackDamage = 10;
+    private PlayerController playerController;
 
+    public int baseAttackDamage = 10;
+    private void Start()
+    {
+        playerController = GameObject.FindWithTag("Player").GetComponent<PlayerController>();
+        if (playerController == null)
+        {
+            Debug.LogError("PlayerController not found on the player.");
+        }
+    }
     private void OnTriggerEnter(Collider other)
     {
         Debug.Log("PlayerAttack: OnTriggerEnter called");
@@ -16,6 +25,8 @@ public class PlayerAttack : MonoBehaviour
             EnemyAI enemyAI = other.GetComponent<EnemyAI>();
             if (enemyAI != null)
             {
+                int attackDamage = Mathf.RoundToInt(baseAttackDamage * playerController.damageMultiplier);
+
                 enemyAI.TakeDamage(attackDamage);
             }
         }

@@ -18,6 +18,7 @@ public class EnemyAI : MonoBehaviour
 
     Vector3 wanderTarget;
     float wanderRange = 20.0f; // Define wander range
+    public int experienceValue = 50;
 
     GameObject player; 
     NavMeshAgent agent;
@@ -139,7 +140,26 @@ public class EnemyAI : MonoBehaviour
 
     public void Die()
     {
+
         Debug.Log("Enemy died!");
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        if(player != null)
+        {
+            PlayerController playerController = player.GetComponent<PlayerController>();
+            if (playerController != null)
+            {
+                playerController.GainExperience(experienceValue);
+
+            }
+            else
+            {
+                Debug.LogError("PlayerController not found on the player.");
+            }
+        }
+        else
+        {
+            Debug.LogError("PlayerNotFound");
+        }
         Destroy(gameObject);
     }
 }
