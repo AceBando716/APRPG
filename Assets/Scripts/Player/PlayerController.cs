@@ -12,6 +12,10 @@ public class PlayerController : MonoBehaviour
     private Rigidbody rb;
     private CinemachineVirtualCamera virtualCamera;
 
+    private int attackPhase = 0;
+
+ 
+ 
     private bool isSprinting;
     private bool isGrounded;
     [SerializeField] private Transform groundCheck;
@@ -46,6 +50,7 @@ public class PlayerController : MonoBehaviour
         HandleGrounded();
         HandleMovement();
         HandleDashing();
+        HandleAttack();
     }
 
     private void HandleSprinting()
@@ -74,12 +79,21 @@ public class PlayerController : MonoBehaviour
         float y = Input.GetAxis("Vertical");
         Vector3 inputDirection = new Vector3(x, 0f, y).normalized;
 
-        float speed = isSprinting ? sprintSpeed : walkSpeed;
+        float movementMagnitude = inputDirection.magnitude;
 
-        bool isMoving = inputDirection.magnitude >= 0.1f;
-        animator.SetBool("IsWalking", isMoving);
+        float speed = 0f; // Idle
+        if (movementMagnitude >= 0.1f) // Walking
+        {
+            speed = 0.5f; // Walking speed
+            if (isSprinting) // Sprinting
+            {
+                speed = 1f; // Sprinting speed
+            }
+        }
 
-        if (isMoving)
+        animator.SetFloat("Speed", speed);
+
+        if (movementMagnitude >= 0.1f)
         {
             Vector3 cameraForward = virtualCamera.transform.forward;
             cameraForward.y = 0;  
@@ -92,7 +106,7 @@ public class PlayerController : MonoBehaviour
             float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
             transform.rotation = Quaternion.Euler(0f, angle, 0f);
 
-            MovePlayer(moveDirection, speed);
+            MovePlayer(moveDirection, (isSprinting ? sprintSpeed : walkSpeed));
         }
     }
 
@@ -103,19 +117,20 @@ public class PlayerController : MonoBehaviour
     }
 
     private void HandleDashing()
+{
+    if (Input.GetKeyDown(dashKey) && !isDashing && isGrounded)
     {
-        if (Input.GetKeyDown(dashKey) && !isDashing && isGrounded)
-        {
-            isDashing = true;
-            animator.SetBool("IsDashing", true);
-            animator.SetTrigger("DashTrigger");
-            StartCoroutine(Dash());
-        }
-        else if (!Input.GetKeyDown(dashKey) || !isGrounded)
-        {
-            animator.SetBool("IsDashing", false);
-        }
+        isDashing = true;
+        animator.SetBool("IsDashing", true);
+        animator.SetTrigger("DashTrigger"); // Make sure "DashTrigger" is the correct name in the Animator
+        StartCoroutine(Dash());
     }
+    else if (!Input.GetKeyDown(dashKey) || !isGrounded)
+    {
+        animator.SetBool("IsDashing", false);
+    }
+}
+
 
     private IEnumerator Dash()
     {
@@ -133,18 +148,22 @@ public class PlayerController : MonoBehaviour
         rb.velocity = Vector3.zero;
         isDashing = false;
     }
+    private void HandleAttack()
+    {
+        if (Input.GetKeyDown(KeyCode.Mouse0)) // Responding to left mouse button click
+        {
+            
+
+             
+            animator.SetTrigger("AttackTrigger");
+            
+             
+        }
+
+         
+         
+    }
+
+
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
