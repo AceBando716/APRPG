@@ -1,6 +1,7 @@
 using UnityEngine;
 using Cinemachine;
 using System.Collections;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
@@ -8,9 +9,16 @@ public class PlayerController : MonoBehaviour
     [SerializeField] public int currentExp = 0;
     [SerializeField] public int expToNextLevel = 100;
     [SerializeField] public int maxLevel = 100;
-    [SerializeField] public float damageMultiplier = 1.0f; // Initial damage multiplier
-    [SerializeField] private float baseDamage = 10f; // Initial base damage
+    [SerializeField] public float damageMultiplier = 1.0f; 
+    [SerializeField] private float baseDamage = 10f;
     private Animator animator;
+
+    public GameObject healthBarPrefab;
+    private GameObject healthBar;
+    private RectTransform healthBarForeground;
+
+
+
     [SerializeField] private float walkSpeed = 2f;
     [SerializeField] private float sprintSpeed = 10f;
     [SerializeField] private float turnSmoothTime = 0.1f;
@@ -20,7 +28,10 @@ public class PlayerController : MonoBehaviour
 
     private int attackPhase = 0;
 
- 
+    public Transform respawnPoint;
+
+    private Vector3 spawnPosition;
+
  
     private bool isSprinting;
     private bool isGrounded;
@@ -36,7 +47,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private float dashDuration = 0.5f;
     [SerializeField] private float dashDrag = 1.5f;
 
-    private void Start()
+    [SerializeField] private int health = 100;
+    public int maxHealth = 100;
+
+
+     private void Start()
     {
         rb = GetComponent<Rigidbody>();
         if (rb == null) Debug.LogError("Rigidbody not found on the player.");
@@ -48,6 +63,13 @@ public class PlayerController : MonoBehaviour
         if (animator == null) Debug.LogError("Animator not found on the player.");
 
         rb.constraints = RigidbodyConstraints.FreezeRotationZ | RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationY;
+
+        // Instantiate health bar and set it up
+        healthBar = Instantiate(healthBarPrefab, transform.position, Quaternion.identity, transform);
+        healthBar.transform.localPosition = new Vector3(0, 1.5f, 0); // Adjust Y-offset here
+        healthBarForeground = healthBar.transform.Find("healthBarBackground/healthBarForeground").GetComponent<RectTransform>();
+
+        UpdateHealthBar();  // Initialize the health bar
     }
 
     private void Update()
@@ -61,7 +83,6 @@ public class PlayerController : MonoBehaviour
         if (currentExp >= expToNextLevel)
         {
             LevelUp();
-
         }
     }
 
@@ -87,15 +108,22 @@ public class PlayerController : MonoBehaviour
 
     }
     private void LevelUp()
+{
+    if (playerLevel < maxLevel)
     {
-        if (playerLevel < maxLevel)
-        {
-            playerLevel++;
-            currentExp -= expToNextLevel;  
-            expToNextLevel = Mathf.RoundToInt(expToNextLevel * 1.1f);
-            damageMultiplier += 0.1f; // 10%  
-        }
+        playerLevel++;
+        currentExp -= expToNextLevel;
+        expToNextLevel = Mathf.RoundToInt(expToNextLevel * 1.1f);
+        damageMultiplier += 0.1f;
+
+      
+        health = maxHealth;
+
+         
+        UpdateHealthBar();
     }
+}
+
          
 
 
@@ -127,13 +155,13 @@ public class PlayerController : MonoBehaviour
 
         float movementMagnitude = inputDirection.magnitude;
 
-        float speed = 0f; // Idle
-        if (movementMagnitude >= 0.1f) // Walking
+        float speed = 0f; 
+        if (movementMagnitude >= 0.1f)
         {
-            speed = 0.5f; // Walking speed
-            if (isSprinting) // Sprinting
+            speed = 0.5f; 
+            if (isSprinting) 
             {
-                speed = 1f; // Sprinting speed
+                speed = 1f; 
             }
         }
 
@@ -168,7 +196,7 @@ public class PlayerController : MonoBehaviour
     {
         isDashing = true;
         animator.SetBool("IsDashing", true);
-        animator.SetTrigger("DashTrigger"); // Make sure "DashTrigger" is the correct name in the Animator
+        animator.SetTrigger("DashTrigger"); 
         StartCoroutine(Dash());
     }
     else if (!Input.GetKeyDown(dashKey) || !isGrounded)
@@ -196,7 +224,7 @@ public class PlayerController : MonoBehaviour
     }
     private void HandleAttack()
     {
-        if (Input.GetKeyDown(KeyCode.Mouse0)) // Responding to left mouse button click
+        if (Input.GetKeyDown(KeyCode.Mouse0)) 
         {
             
 
@@ -209,6 +237,46 @@ public class PlayerController : MonoBehaviour
          
          
     }
+
+    public void TakeDamage(int damageAmount)
+    {
+        health -= damageAmount;
+        if (health <= 0)
+        {
+            Die();
+        }
+        else
+        {
+            UpdateHealthBar();
+        }
+    }
+
+    private void UpdateHealthBar()
+    {
+        if (healthBarForeground != null)
+        {
+            float healthPercentage = (float)health / maxHealth;
+            healthBarForeground.localScale = new Vector3(healthPercentage, 1, 1);
+        }
+    }
+
+    private void Die()
+    {
+        animator.SetTrigger("DieTrigger");
+        FindObjectOfType<EnemySpawnManager>().ResetWave();
+        Invoke(nameof(Respawn), 5f);
+    }
+
+    private void Respawn()
+    {
+        health = maxHealth;
+        transform.position = respawnPoint != null ? respawnPoint.position : spawnPosition;
+        animator.SetFloat("Speed", 0f);  
+        animator.ResetTrigger("DieTrigger");
+        UpdateHealthBar();  
+    }
+
+
 
 }
  

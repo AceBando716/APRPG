@@ -5,6 +5,7 @@ using UnityEngine.AI;
 
 public class EnemyAI : MonoBehaviour
 {
+    public Animator animator;
     public GameObject healthBarPrefab;
     private GameObject healthBar;
     private RectTransform healthBarForeground;
@@ -14,7 +15,7 @@ public class EnemyAI : MonoBehaviour
     float chaseSpeed = 10f;
     float wanderSpeed = 5f;
     float sightRange = 20f;
-    float attackRange = 10f; // Define attack range
+    float attackRange = 5f; // Define attack range
 
     Vector3 wanderTarget;
     float wanderRange = 20.0f; // Define wander range
@@ -22,6 +23,9 @@ public class EnemyAI : MonoBehaviour
 
     GameObject player; 
     NavMeshAgent agent;
+    private float lastAttackTime;
+    private float attackCooldown = 1.0f; // Cooldown in seconds between attacks
+
 
     void Start()
     {
@@ -34,7 +38,6 @@ public class EnemyAI : MonoBehaviour
         healthBar = Instantiate(healthBarPrefab, transform.position, Quaternion.identity);
         healthBar.transform.SetParent(gameObject.transform);
 
-        // Find the healthBarForeground inside healthBarBackground
         Transform healthBarBackground = healthBar.transform.Find("healthBarBackground");
         if (healthBarBackground != null)
         {
@@ -55,6 +58,7 @@ public class EnemyAI : MonoBehaviour
         if (IsPlayerInSightRange() && !IsPlayerInAttackRange())
         {
             ChasePlayer();
+            animator.SetBool("isChasing", true);
         }
         else if (IsPlayerInAttackRange())
         {
@@ -63,6 +67,7 @@ public class EnemyAI : MonoBehaviour
         else
         {
             Wander();
+            animator.SetBool("isWandering", true);
         }
     }
 
@@ -92,8 +97,34 @@ public class EnemyAI : MonoBehaviour
 
     void AttackPlayer()
     {
-        Debug.Log("Attacking Player");
+        animator.SetTrigger("AttackTrigger");
+        animator.SetBool("isChasing", false);
+
+        
+        if (IsPlayerInAttackRange() && CanAttack()) 
+        {
+            
+            PlayerController playerController = player.GetComponent<PlayerController>();
+            if (playerController != null)
+            {
+                playerController.TakeDamage(10);  
+            }
+
+            // Reset the attack timer
+            ResetAttackTimer();
+        }
     }
+    bool CanAttack()
+    {
+        return Time.time >= lastAttackTime + attackCooldown;
+    }
+
+    void ResetAttackTimer()
+    {
+        lastAttackTime = Time.time;
+    }
+
+
 
     void Wander()
     {
@@ -140,7 +171,6 @@ public class EnemyAI : MonoBehaviour
 
     public void Die()
     {
-
         Debug.Log("Enemy died!");
         GameObject player = GameObject.FindGameObjectWithTag("Player");
         if(player != null)
@@ -149,7 +179,6 @@ public class EnemyAI : MonoBehaviour
             if (playerController != null)
             {
                 playerController.GainExperience(experienceValue);
-
             }
             else
             {
@@ -163,8 +192,3 @@ public class EnemyAI : MonoBehaviour
         Destroy(gameObject);
     }
 }
-
-
-
-
-
